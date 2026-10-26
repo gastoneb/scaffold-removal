@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="260" viewBox="0 0 640 260" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="640" height="260" rx="12" fill="#0d1117"/>
+  <text x="320" y="38" text-anchor="middle" font-size="20" font-weight="600" fill="#f0f6fc">🧹 One run of scaffold-removal on the demo project</text>
+
+  <text x="24" y="92" font-size="14" fill="#8b949e">Source lines</text>
+  <rect x="150" y="76" width="453" height="22" rx="4" fill="#f85149"/>
+  <text x="156" y="92" font-size="13" fill="#fff">151</text>
+  <rect x="150" y="104" width="114" height="22" rx="4" fill="#3fb950"/>
+  <text x="156" y="120" font-size="13" fill="#fff">38</text>
+
+  <text x="24" y="170" font-size="14" fill="#8b949e">Test lines</text>
+  <rect x="150" y="154" width="453" height="22" rx="4" fill="#f85149"/>
+  <text x="156" y="170" font-size="13" fill="#fff">262</text>
+  <rect x="150" y="182" width="67" height="22" rx="4" fill="#3fb950"/>
+  <text x="156" y="198" font-size="13" fill="#fff">39</text>
+
+  <text x="320" y="236" text-anchor="middle" font-size="13" fill="#8b949e">🔴 before   🟢 after   ·   same behavior, validation kept   ·   bars scaled per row</text>
+</svg>
