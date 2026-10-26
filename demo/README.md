@@ -7,12 +7,23 @@ abstract base classes, JSON and XML options nobody uses, a config class driven
 by environment variables, a logging wrapper, and five test files that mirror
 the implementation.
 
-| | Source lines | Test lines |
-|---|---|---|
-| [before/](before) | 151 | 262 |
-| [after/](after) (reference result) | 30 | 25 |
+## Result of one real run
+
+The skill was run on a copy of `before/`, with no reference solution available:
+
+| | Source lines | Test lines | Files |
+|---|---|---|---|
+| Before | 151 | 262 | 8 source, 5 test |
+| After | 38 | 39 | 3 source, 1 test |
 
 Counts are non-blank Python lines, from `check.py`.
+
+It removed the unused formats, config, logging wrapper, abstract base classes,
+registries and five mirrored unit-test files. Per-row validation and the
+explicit error exits stayed, and the new smoke test runs the real CLI. It was a
+single run of a non-deterministic agent, so results will vary. It left behind
+injectable `stdout`/`stderr` arguments that only the deleted tests used, which
+is why the skill's checklist now lists test-only injection points.
 
 ## Try it
 
@@ -36,8 +47,7 @@ What to look for:
   does not authorize cutting validation.
 - The project's own tests still pass, and there is a `tests/` directory
   holding a small end-to-end smoke test.
-- Source and test line counts fall sharply. [after/](after) is one possible
-  result, not the only right one.
+- Source and test line counts fall sharply.
 
 `check.py` only measures the outcome. Whether the agent kept things that
 matter (and said what it removed) is for you to judge from its report.
