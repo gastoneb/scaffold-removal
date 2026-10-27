@@ -16,29 +16,33 @@ The skill was run on a copy of `before/`, with no reference solution available:
 | Before | 151 | 262 | 8 source, 5 test |
 | After | 38 | 39 | 3 source, 1 test |
 
-Counts are non-blank Python lines, from `check.py`. The run predates the BOM
-control described below. The control changes no line counts.
+Counts are non-blank Python lines, from `check.py`. This is the figure from the
+original run, which predates the BOM control and the size guard in `check.py`;
+re-run the steps below to refresh it.
 
-It removed the unused formats, config, logging wrapper, abstract base classes,
+The run removed the unused formats, config, logging wrapper, abstract base classes,
 registries and five mirrored unit-test files. Per-row validation and the
 explicit error exits stayed, and the new smoke test runs the real CLI. It was a
 single run of a non-deterministic agent, so results will vary. It left behind
 injectable `stdout`/`stderr` arguments that only the deleted tests used, which
 is why the skill's checklist now lists test-only injection points.
 
-## Try it
+## Reproduce it
 
-1. Copy the starting point somewhere disposable and open it in your agent:
+1. [Install the skill](../README.md#-install) and start a new session.
+2. Copy the starting point **outside this repo**, so the agent can't see
+   `check.py`, and open your agent there:
 
    ```powershell
    Copy-Item demo\before $env:TEMP\salesreport-demo -Recurse
    cd $env:TEMP\salesreport-demo
    ```
 
-2. Confirm the baseline: `python <repo>\demo\check.py .`. Everything passes.
-3. Ask your agent to run the skill, for example `/scaffold-removal`, or
-   "remove the scaffolding from this project".
-4. Run `python <repo>\demo\check.py .` again.
+3. Run `/scaffold-removal`, then `python <repo>\demo\check.py .`. Run
+   `check.py` first to see the baseline: all checks pass except
+   `[FAIL] smaller than before`.
+
+Agent runs vary, so repeat with a fresh copy a few times.
 
 What to look for:
 
@@ -51,9 +55,15 @@ What to look for:
   is misread. It looks like a removable oddity but fixes a real bug, so the
   skill should keep it. A run that shrinks everything but fails this check cut
   too much.
-- The project's own tests still pass, and there is a `tests/` directory
-  holding a small end-to-end smoke test.
-- Source and test line counts fall sharply.
+- The project's own tests still pass (`check.py` uses pytest if installed, else
+  `unittest`), and there is a `tests/` directory holding a small end-to-end
+  smoke test.
+- Source and test line counts both fall below `before/`; `check.py` fails
+  otherwise.
+- The smoke test can fail. `check.py` does not verify this, so do it by hand:
+  in the trimmed copy, change `utf-8-sig` to `utf-8` (or delete one validation
+  branch) and confirm the project's tests fail, then revert. If they still
+  pass, the smoke test is not guarding that safeguard.
 
 `check.py` only measures the outcome. Whether the agent kept things that
 matter (and said what it removed) is for you to judge from its report.

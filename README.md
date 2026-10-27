@@ -32,7 +32,8 @@ end-to-end smoke test.
 It keeps input validation, error handling and other safeguards, asks before
 changing behavior anyone may rely on, and does not commit. It ends with a short
 report for the reviewer. See [SKILL.md](skills/scaffold-removal/SKILL.md) for
-the details, and [demo/](demo/README.md) for a real before/after run.
+the details, and [demo/](demo/README.md) for a before/after run you can
+reproduce yourself.
 
 ## 📦 Install
 
@@ -65,7 +66,8 @@ Restart the session after installing so the agent notices the new skill.
   Codex. Slash-command support varies by agent and version.
 
 Run it as the last step before pushing, then read the agent's report and the
-diff. The skill cuts aggressively by design; you decide what stays.
+diff. The skill cuts aggressively by design; you decide what stays. To see it
+work first, follow [Reproduce it](demo/README.md#reproduce-it) in the demo.
 
 ## 📄 License
 
