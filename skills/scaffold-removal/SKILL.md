@@ -21,7 +21,10 @@ skills limit what gets written; this one removes what was needed to get there.
    unrelated code alone. Record the starting size of source and tests
    separately, e.g. `git diff --stat <base> -- . ':!tests'` and
    `git diff --stat <base> -- tests`.
-   Start from a committed or stashed state so every cut can be reverted.
+   Make every cut revertible with a checkpoint that keeps the change in the
+   working tree, so the diff stays visible: a temporary commit or branch, or
+   `git stash push -u -m scaffold-removal-checkpoint` immediately followed by
+   `git stash apply`. Never leave the target changes only in the stash.
 2. **Pin the outcome.** Read the affected implementation, callers, tests and
    documentation. State the end-to-end behavior that must keep working and run
    its existing checks first. If nothing exercises it, write that one test
