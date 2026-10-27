@@ -56,6 +56,16 @@ def behaviour(project, tmp):
     results.append(("missing file: exit 1, readable error",
                     result.returncode != 0 and bool(result.stderr.strip())
                     and "Traceback" not in result.stderr))
+
+    # Negative control: a real-bug fix that looks like clutter and must survive.
+    bom = tmp / "bom.csv"
+    bom.write_bytes(b"\xef\xbb\xbf" + GOOD.encode())
+    result = run_cli(project, str(bom))
+    try:
+        ok = result.returncode == 0 and json.loads(result.stdout) == EXPECTED
+    except ValueError:
+        ok = False
+    results.append(("kept: file with a UTF-8 BOM (Excel export) still reads", ok))
     return results
 
 

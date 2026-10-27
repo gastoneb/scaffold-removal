@@ -16,7 +16,8 @@ The skill was run on a copy of `before/`, with no reference solution available:
 | Before | 151 | 262 | 8 source, 5 test |
 | After | 38 | 39 | 3 source, 1 test |
 
-Counts are non-blank Python lines, from `check.py`.
+Counts are non-blank Python lines, from `check.py`. The run predates the BOM
+control described below. The control changes no line counts.
 
 It removed the unused formats, config, logging wrapper, abstract base classes,
 registries and five mirrored unit-test files. Per-row validation and the
@@ -41,10 +42,15 @@ is why the skill's checklist now lists test-only injection points.
 
 What to look for:
 
-- The four behavior checks still pass. They run `python -m salesreport FILE`
+- The behavior checks still pass. They run `python -m salesreport FILE`
   as a subprocess, so they accept any implementation with the same contract.
   Malformed rows must still be rejected with a readable error: cutting tests
   does not authorize cutting validation.
+- The negative control survives. The reader opens files as `utf-8-sig` because
+  Excel exports start with a byte-order mark, and without it the first header
+  is misread. It looks like a removable oddity but fixes a real bug, so the
+  skill should keep it. A run that shrinks everything but fails this check cut
+  too much.
 - The project's own tests still pass, and there is a `tests/` directory
   holding a small end-to-end smoke test.
 - Source and test line counts fall sharply.

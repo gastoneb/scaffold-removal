@@ -27,7 +27,8 @@ pass: **YAGNI, applied after the proof of concept.** Keep the working
 integration, not the history of how it was developed.
 
 It deletes dead wrappers, speculative options, single-use abstractions and
-debug code, and replaces overlapping unit tests with one end-to-end smoke test.
+debug code, and replaces tests that mirror the implementation with one
+end-to-end smoke test.
 It keeps input validation, error handling and other safeguards, asks before
 changing behavior anyone may rely on, and does not commit. It ends with a short
 report for the reviewer. See [SKILL.md](skills/scaffold-removal/SKILL.md) for
