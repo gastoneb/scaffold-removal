@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Skill frontmatter is valid
+        run: |
+          python - <<'EOF'
+          import re, pathlib
+          text = pathlib.Path("skills/scaffold-removal/SKILL.md").read_text()
+          head = re.match(r"---\n(.*?)\n---\n", text, re.S).group(1)
+          assert re.search(r"^name: scaffold-removal$", head, re.M), "name must match folder"
+          assert re.search(r"^description: .{20,}", head, re.M), "description missing"
+          EOF
+
+      - name: Fixture passes its own checks
+        run: python demo/check.py demo/before
+
+      # An untouched copy must still fail the size guard, or a no-op run would pass.
+      - name: Harness rejects an untrimmed copy
+        run: |
+          cp -r demo/before /tmp/copy
+          ! python demo/check.py /tmp/copy
