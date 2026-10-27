@@ -12,7 +12,7 @@ class BaseReader(ABC):
 class CsvReader(BaseReader):
     def read(self, path):
         rows = []
-        with open(path, newline="") as handle:
+        with open(path, newline="", encoding="utf-8-sig") as handle:  # Excel exports add a BOM
             for number, record in enumerate(csv.DictReader(handle), start=2):
                 rows.append(self._parse(record, number))
         return rows

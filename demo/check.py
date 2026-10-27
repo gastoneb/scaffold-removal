@@ -5,9 +5,12 @@
 
 Behaviour checks run the real CLI (`python -m salesreport FILE`) in a
 subprocess, so they pass for any implementation that keeps the same
-contract. The project's own tests are then run and the code size is counted.
+contract. The project's own tests are then run (pytest if installed, else
+unittest), the code size is counted, and any project other than `demo/before`
+must be smaller than it in both source and tests.
 """
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -23,7 +26,10 @@ def run_cli(project, *args):
     env = {k: v for k, v in os.environ.items() if not k.startswith("SALESREPORT_")}
     return subprocess.run(
         [sys.executable, "-m", "salesreport", *args],
-        cwd=project, env=env, capture_output=True, text=True,
+        cwd=project,
+        env=env,
+        capture_output=True,
+        text=True,
     )
 
 
@@ -45,27 +51,63 @@ def behaviour(project, tmp):
     results.append(("totals per region as JSON", ok))
 
     result = run_cli(project, str(bad))
-    results.append(("bad amount: exit 1, no output, names line 3",
-                    result.returncode != 0 and not result.stdout.strip()
-                    and "3" in result.stderr))
+    results.append(
+        (
+            "bad amount: exit 1, no output, names line 3",
+            result.returncode != 0
+            and not result.stdout.strip()
+            and "3" in result.stderr,
+        )
+    )
 
     result = run_cli(project, str(empty_region))
-    results.append(("missing region rejected", result.returncode != 0 and not result.stdout.strip()))
+    results.append(
+        (
+            "missing region rejected",
+            result.returncode != 0 and not result.stdout.strip(),
+        )
+    )
 
     result = run_cli(project, str(tmp / "nope.csv"))
-    results.append(("missing file: exit 1, readable error",
-                    result.returncode != 0 and bool(result.stderr.strip())
-                    and "Traceback" not in result.stderr))
+    results.append(
+        (
+            "missing file: exit 1, readable error",
+            result.returncode != 0
+            and bool(result.stderr.strip())
+            and "Traceback" not in result.stderr,
+        )
+    )
+
+    # Negative control: a real-bug fix that looks like clutter and must survive.
+    bom = tmp / "bom.csv"
+    bom.write_bytes(b"\xef\xbb\xbf" + GOOD.encode())
+    result = run_cli(project, str(bom))
+    try:
+        ok = result.returncode == 0 and json.loads(result.stdout) == EXPECTED
+    except ValueError:
+        ok = False
+    results.append(("kept: file with a UTF-8 BOM (Excel export) still reads", ok))
     return results
 
 
 def own_tests(project):
     if not (project / "tests").is_dir():
         return None
-    result = subprocess.run(
-        [sys.executable, "-m", "unittest", "discover", "-t", ".", "-s", "tests"],
-        cwd=project, capture_output=True, text=True,
-    )
+    # pytest also runs unittest-style tests; fall back to unittest where it is absent
+    if importlib.util.find_spec("pytest"):
+        command = [sys.executable, "-m", "pytest", "-q", "tests"]
+    else:
+        command = [
+            sys.executable,
+            "-m",
+            "unittest",
+            "discover",
+            "-t",
+            ".",
+            "-s",
+            "tests",
+        ]
+    result = subprocess.run(command, cwd=project, capture_output=True, text=True)
     return result.returncode == 0
 
 
@@ -104,7 +146,18 @@ def main():
         print(f"[{'ok' if tests_ok else 'FAIL'}] project's own tests pass")
     print(f"non-blank lines: {source} source, {tests} tests")
 
-    return 0 if all(ok for _, ok in results) and tests_ok else 1
+    # An untouched copy passes every check above, so require it to have shrunk.
+    before = Path(__file__).parent / "before"
+    shrunk = True
+    if project != before.resolve():
+        before_source, before_tests = count_lines(before)
+        shrunk = source < before_source and tests < before_tests
+        print(
+            f"[{'ok' if shrunk else 'FAIL'}] smaller than before "
+            f"({before_source} source, {before_tests} tests)"
+        )
+
+    return 0 if all(ok for _, ok in results) and tests_ok and shrunk else 1
 
 
 if __name__ == "__main__":

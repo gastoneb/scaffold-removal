@@ -1,6 +1,6 @@
 ---
 name: scaffold-removal
-description: 'Use before opening a pull request, or when asked to remove proof-of-concept scaffolding: aggressively shrink generated or committed code and tests, remove exploratory baggage, simplify an overbuilt integration, reduce boilerplate, replace excessive tests with an end-to-end smoke test, or keep product-specific documentation out of the main README. Triggers: "remove the scaffolding", "pare this down for review", "this is too big to review", "clean up before the PR".'
+description: 'Use before opening a pull request, or when asked to remove proof-of-concept scaffolding: shrink code and tests to what a reviewer needs, replace excessive tests with an end-to-end smoke test, and keep product-specific docs out of the main README. Triggers: "remove the scaffolding", "pare this down for review", "this is too big to review", "clean up before the PR".'
 ---
 
 # Scaffold removal
@@ -17,29 +17,45 @@ skills limit what gets written; this one removes what was needed to get there.
 ## Workflow
 
 1. **Scope.** Work on what this change added or touched (`git diff` against the
-   base branch, plus untracked files). Leave unrelated code alone. Record the
-   starting size, e.g. `git diff --stat <base>`.
+   base branch, plus untracked files). Ask for the base if it is unclear. Leave
+   unrelated code alone. Record the starting size of source and tests
+   separately, e.g. `git diff --stat <base> -- . ':!tests'` and
+   `git diff --stat <base> -- tests`.
+   Make every cut revertible with a checkpoint that keeps the change in the
+   working tree, so the diff stays visible: a temporary commit or branch, or
+   `git stash push -u -m scaffold-removal-checkpoint` immediately followed by
+   `git stash apply`. Never leave the target changes only in the stash.
 2. **Pin the outcome.** Read the affected implementation, callers, tests and
    documentation. State the end-to-end behavior that must keep working and run
    its existing checks first. If nothing exercises it, write that one test
    before cutting anything.
 3. **Cut code.** Delete what does not earn its place (see the checklist below).
    Reuse the project's existing path. Do not introduce a framework, base class or
-   helper to make the cleanup look organized.
-4. **Ask before changing behavior.** Removing support for discarded experiments
-   is fine when it is clearly unused. Ask before dropping compatibility or
-   changing behavior users may rely on. Reject unsupported formats explicitly;
-   never silently reinterpret them or delete user data.
-5. **Cut tests.** Replace overlapping internal and edge-case tests with one
-   compact end-to-end smoke test. Aim for roughly 100 lines for the affected
-   feature's test file, including fixtures. This is a scope target, not a reason
-   to minify code or hide test setup elsewhere.
+   helper to make the cleanup look organized. Keep code readable: no dense
+   one-liners or elaborate fixture factories to claim a smaller diff, and no
+   storage-layout changes or dependency swaps just to save lines. Removing a
+   dependency this change added and nothing now uses is fine.
+4. **Ask before changing behavior.** Decide by provenance. Behavior introduced
+   in this change and never released or documented is free to cut. Behavior
+   already on the base branch, released or documented needs the user's
+   approval first. "Nobody sets it" needs evidence: grep docs, scripts, CI and
+   callers before deleting a flag or environment variable that is already on the
+   base branch. Reject unsupported formats explicitly; never silently
+   reinterpret them or delete user data.
+5. **Cut tests.** Keep a test only if it would still pass after a correct
+   rewrite of the internals. Delete tests that assert on mocks, call order,
+   private helpers or removed code, and overlapping per-branch tests. Cover the
+   remaining behavior with one compact end-to-end smoke test. Keep focused
+   input-to-output tests for logic with real edge cases (parsing, money, dates).
+   Keep tests small enough to review at a glance; this is a scope goal, not a
+   reason to minify code or hide test setup elsewhere.
 6. **Make the smoke test real.** Exercise the public entry point, processing and
    persistent output. Mock external services and transfers, not the
    implementation being tested. Assert meaningful results, not merely that the
    command exits successfully. Reuse shared tests rather than repeating them
    for each integration. Keep one case for each safeguard that remains
-   (for example, a rejected malformed input).
+   (for example, a rejected malformed input). Confirm the test can fail by
+   temporarily breaking one safeguard.
 7. **Trim docs.** Keep the main README focused on setup, common usage and a
    short feature summary. Put necessary product-specific details in one linked
    guide. Delete notes that only narrate how the code was developed.
@@ -62,7 +78,9 @@ Usually scaffolding:
 - Defensive code for states that cannot happen inside the same trust boundary.
 - Unit tests that mirror the implementation, one-per-branch tests that the smoke
   test already covers, and tests of removed code.
-- Helper scripts, sample data, notebooks and notes left from exploration.
+- Helper scripts, sample data, notebooks and notes left from exploration,
+  unless the smoke test uses them.
+- Dependencies this change added that nothing uses any more.
 
 Keep, even if it looks like clutter:
 
@@ -72,18 +90,19 @@ Keep, even if it looks like clutter:
 - A regression test for a bug that actually happened.
 - Anything the reviewer could not recreate from the remaining code.
 
-When unsure whether something is scaffolding, check who calls it. If nothing
-real does, remove it; if it guards against failure, keep it and say so.
+When unsure whether something is scaffolding, check who calls it. Public
+exports, entry points, config keys, documented interfaces and string-keyed
+lookups (registries, reflection) count as callers, so search for those too. If
+nothing real calls it, remove it; if it guards against failure, keep it and say
+so. Code that looks odd but fixes a real bug (an encoding flag, a retry) is a
+safeguard: keep it.
 
 ## Boundaries
 
-- Cutting tests does not authorize cutting runtime input validation, credential
-  protection, explicit errors, locking or publication safeguards.
-- Preserve current supported output formats and data semantics unless the user
-  agrees otherwise. Do not change dependencies or storage layout just to save lines.
-- Do not delete unrelated tests or rewrite shared infrastructure unnecessarily.
-- Keep code readable. No dense one-liners, arbitrary line-count tricks or
-  elaborate fixture factories to claim a smaller test file.
+- Cutting tests does not authorize cutting runtime validation or safeguards (see
+  Keep above). Preserve supported output formats and data semantics unless the
+  user agrees.
+- Do not delete unrelated tests or rewrite shared infrastructure.
 - Do not commit changes unless asked.
 
 ## Report
